@@ -1,0 +1,14 @@
+# Generados: `xcodegen generate` los vuelve a crear
+*.xcodeproj/
+Info.plist
+
+# Compilación
+build/
+build-ios/
+.build/
+.swiftpm/
+DerivedData/
+Payload/
+*.ipa
+*.log
+capturas/
