@@ -21,8 +21,8 @@ enum Autoprueba {
         // --- plazos: crear, sumar, paso hecho, y que todo vuelva igual al reabrir ---
         let p = PlazosStore(carpeta: dir, guardarAjustes: false)
         let t = Tarea(nombre: "Informe T2", entrega: Date().addingTimeInterval(3 * 86400), horasEstimadas: 9,
-                      siguientePaso: "escribir la intro")
-        p.guardarTarea(t, horasIniciales: 1)
+                      horasHechas: 1, siguientePaso: "escribir la intro")
+        p.guardarTarea(t)
         p.sumarHoras(t.id, 0.5)
         p.pasoHecho(t.id, horas: 0.25, nuevoPaso: "armar los 3 gráficos de resultados")
         let p2 = PlazosStore(carpeta: dir, guardarAjustes: false)

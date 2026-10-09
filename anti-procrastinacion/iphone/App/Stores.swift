@@ -52,16 +52,17 @@ final class PlazosStore: ObservableObject {
         }
     }
 
-    /// Nueva o editada. Las horas iniciales de una nueva quedan en el registro, como en escritorio.
-    func guardarTarea(_ t: Tarea, horasIniciales: Double = 0) {
+    /// Nueva o editada. Si una nueva ya trae horas hechas, quedan también en el registro
+    /// (como en escritorio): así la entrega y el registro nunca discrepan.
+    func guardarTarea(_ t: Tarea) {
         var d = datos
         if let i = d.tareas.firstIndex(where: { $0.id == t.id }) {
             d.tareas[i] = t
         } else {
             d.tareas.append(t)
-            if horasIniciales > 0 {
+            if t.horasHechas > 0 {
                 d.registro.append(RegistroHoras(fecha: FechaISO.textoMinutos(Date()), tarea: t.id,
-                                                horas: horasIniciales, inicial: true))
+                                                horas: t.horasHechas, inicial: true))
             }
         }
         datos = d

@@ -393,7 +393,7 @@ struct TareaForm: View {
         t.horasEstimadas = est
         t.horasHechas = hh
         t.siguientePaso = paso.recortado
-        store.guardarTarea(t, horasIniciales: original == nil ? hh : 0)
+        store.guardarTarea(t)
         dismiss()
     }
 }
