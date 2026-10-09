@@ -1,0 +1,16 @@
+# Datos personales que cada app crea al usarse
+*_config.json
+*_datos.json
+*_datos.corrupto-*.json
+*_registro.csv
+*_para_despues.txt
+*_hosts_respaldo.txt
+*_error.log
+*.tmp
+
+# Lanzadores: los crea --accesos con la ruta del Python de cada equipo
+*.bat
+*.sh
+*.desktop
+
+__pycache__/

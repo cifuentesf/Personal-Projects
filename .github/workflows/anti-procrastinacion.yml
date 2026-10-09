@@ -1,0 +1,72 @@
+name: anti-procrastinacion
+
+on:
+  push:
+    paths:
+      - "anti-procrastinacion/**"
+      - ".github/workflows/anti-procrastinacion.yml"
+  pull_request:
+    paths:
+      - "anti-procrastinacion/**"
+      - ".github/workflows/anti-procrastinacion.yml"
+
+jobs:
+  pruebas:
+    name: ${{ matrix.os }} · Python ${{ matrix.python }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        python: ["3.9", "3.13"]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: anti-procrastinacion
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Autopruebas (--selftest)
+        run: |
+          for app in plazos foco bloqueo; do
+            echo "== $app"; python $app/$app.py --selftest
+          done
+
+      - name: Pantalla virtual (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y xvfb
+
+      - name: Interfaz (--guitest)
+        run: |
+          correr() { if [ "$RUNNER_OS" = "Linux" ]; then xvfb-run -a "$@"; else "$@"; fi; }
+          for app in plazos foco bloqueo; do
+            echo "== $app"; correr python $app/$app.py --guitest
+          done
+
+      - name: Accesos directos (--accesos)
+        run: |
+          for app in plazos foco bloqueo; do
+            echo "== $app"; python $app/$app.py --accesos
+            test -f $app/$app.bat && test -f $app/$app.sh && test -f $app/$app.desktop
+          done
+
+      - name: Accesos en el Escritorio de Windows (bloqueo abre como administrador)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $d = [Environment]::GetFolderPath('Desktop')
+          foreach ($app in 'plazos', 'foco', 'bloqueo') {
+            $l = Join-Path $d "$app.lnk"
+            if (!(Test-Path $l)) { Write-Error "falta $l"; exit 1 }
+            $s = (New-Object -ComObject WScript.Shell).CreateShortcut($l)
+            Write-Output "$app -> $($s.TargetPath) $($s.Arguments)"
+            if (!(Test-Path $s.TargetPath)) { Write-Error "el acceso de $app apunta a algo que no existe"; exit 1 }
+          }
+          $b = [IO.File]::ReadAllBytes((Join-Path $d 'bloqueo.lnk'))
+          if (($b[0x15] -band 0x20) -eq 0) { Write-Error 'bloqueo.lnk no abre como administrador'; exit 1 }
+          $b = [IO.File]::ReadAllBytes((Join-Path $d 'foco.lnk'))
+          if (($b[0x15] -band 0x20) -ne 0) { Write-Error 'foco.lnk no deberia pedir administrador'; exit 1 }
+          Write-Output 'accesos directos correctos'
