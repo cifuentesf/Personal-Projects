@@ -14,6 +14,10 @@ Se conectan sin depender una de otra: **plazos** dice cuál es el siguiente paso
 de cada entrega, **foco** te lo ofrece como intención del bloque, y **bloqueo**
 cuida ese bloque. Cada una funciona sola.
 
+**En iPhone**: plazos y foco también existen como app nativa, **Al día**, que
+lee y escribe los mismos archivos. Instalación y detalles en
+[`iphone/README.md`](iphone/README.md).
+
 ## Ejecutar
 
 Python 3.9 o más nuevo, con tkinter (el instalador de python.org lo trae; en

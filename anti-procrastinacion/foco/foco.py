@@ -113,7 +113,9 @@ class Temporizador:
 
     def pausar(self) -> None:
         if self._inicio is not None:
-            self._acumulado += self._reloj() - self._inicio
+            # Acotado a la duración: si el fin se nota tarde (PC suspendido), ese tiempo
+            # no cuenta; si no, «Seguir» tras el arranque terminaría el bloque al instante.
+            self._acumulado = min(self._acumulado + self._reloj() - self._inicio, self.duracion)
             self._inicio = None
 
     def reanudar(self) -> None:
@@ -489,6 +491,13 @@ def run_selftest() -> int:
     check(not tm.terminado() and tm.restante() == 1150, "extender convierte el arranque en bloque largo")
     tm.reanudar()
     check(tm.transcurrido() == 1550, "reanudar corriendo no reinicia")
+    tm.iniciar(5 * 60)
+    t_falso[0] += 3 * 3600  # el PC estuvo suspendido 3 horas durante el arranque
+    tm.pausar()
+    check(tm.transcurrido() == 300, "al pausar tarde, no se cuenta más que la duración")
+    tm.extender(20 * 60)
+    tm.reanudar()
+    check(not tm.terminado() and tm.restante() == 1200, "«Seguir» tras una suspensión da los 20 min completos")
 
     check(formato_mmss(25 * 60) == "25:00", "formato 25:00")
     check(formato_mmss(1499.2) == "25:00", "24:59,2 se muestra 25:00")

@@ -1,0 +1,101 @@
+name: iphone
+
+on:
+  push:
+    paths:
+      - "anti-procrastinacion/iphone/**"
+      - ".github/workflows/iphone.yml"
+  pull_request:
+    paths:
+      - "anti-procrastinacion/iphone/**"
+      - ".github/workflows/iphone.yml"
+
+jobs:
+  iphone:
+    name: Lógica, simulador e .ipa
+    runs-on: macos-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: anti-procrastinacion/iphone
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Versiones
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Pruebas de la lógica (swift test)
+        run: swift test --package-path Logica
+
+      - name: Generar el proyecto (XcodeGen)
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Elegir un simulador de iPhone
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          d = json.load(sys.stdin)["devices"]
+          c = [(k, x) for k, v in d.items() if "iOS" in k for x in v if x["name"].startswith("iPhone")]
+          print(sorted(c, key=lambda kx: kx[0])[-1][1]["udid"])')
+          xcrun simctl list devices available | grep "$UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Compilar para el simulador
+        run: |
+          xcodebuild -project AlDia.xcodeproj -scheme AlDia -configuration Debug \
+            -destination "id=${{ steps.sim.outputs.udid }}" -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO build > build.log 2>&1 || {
+              grep -E "error:|\*\* BUILD" build.log | sort -u | head -60; tail -40 build.log; exit 1; }
+          grep -E "warning:.*AlDia/App|\*\* BUILD" build.log | sort -u | head -40 || true
+
+      - name: Autoprueba dentro de la app (simulador)
+        timeout-minutes: 10
+        run: |
+          UDID=${{ steps.sim.outputs.udid }}
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/AlDia.app
+          xcrun simctl launch --console-pty "$UDID" com.cifuentesf.aldia --autoprueba | tee autoprueba.log
+          grep -q "AUTOPRUEBA OK" autoprueba.log
+
+      - name: Capturas de pantalla (datos de ejemplo)
+        run: |
+          UDID=${{ steps.sim.outputs.udid }}
+          mkdir -p capturas
+          xcrun simctl status_bar "$UDID" override --time "9:41" || true
+          xcrun simctl launch "$UDID" com.cifuentesf.aldia --demo
+          sleep 10
+          xcrun simctl io "$UDID" screenshot capturas/plazos.png
+          xcrun simctl terminate "$UDID" com.cifuentesf.aldia
+          xcrun simctl launch "$UDID" com.cifuentesf.aldia --demo --foco
+          sleep 8
+          xcrun simctl io "$UDID" screenshot capturas/foco.png
+          xcrun simctl ui "$UDID" appearance dark
+          sleep 3
+          xcrun simctl io "$UDID" screenshot capturas/foco-oscuro.png
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: capturas
+          path: anti-procrastinacion/iphone/capturas
+
+      - name: Compilar para iPhone, sin firmar (.ipa)
+        run: |
+          xcodebuild -project AlDia.xcodeproj -scheme AlDia -configuration Release -sdk iphoneos \
+            -destination "generic/platform=iOS" -derivedDataPath build-ios \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build > build-ios.log 2>&1 || {
+              grep -E "error:|\*\* BUILD" build-ios.log | sort -u | head -60; tail -40 build-ios.log; exit 1; }
+          mkdir -p Payload
+          cp -R build-ios/Build/Products/Release-iphoneos/AlDia.app Payload/
+          zip -qry AlDia-sin-firmar.ipa Payload
+          ls -la AlDia-sin-firmar.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AlDia-sin-firmar
+          path: anti-procrastinacion/iphone/AlDia-sin-firmar.ipa
