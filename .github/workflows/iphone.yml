@@ -79,13 +79,6 @@ jobs:
           sleep 3
           xcrun simctl io "$UDID" screenshot capturas/foco-oscuro.png
 
-      - name: Capturas en el log (temporal)
-        run: |
-          for f in capturas/*.png; do
-            sips -Z 640 -s format jpeg -s formatOptions 55 "$f" --out "${f%.png}.jpg" >/dev/null
-            echo "CAPTURA $f $(base64 -i "${f%.png}.jpg" | tr -d '\n')"
-          done
-
       - uses: actions/upload-artifact@v4
         with:
           name: capturas
