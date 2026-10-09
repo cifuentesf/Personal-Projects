@@ -873,6 +873,11 @@ def run_gui(smoke_ms: int = 0, data_path: Path | None = None, config_path: Path 
     except Exception:
         pass
     style.configure("Treeview", rowheight=int(base.metrics("linespace") * 1.6))
+    # Tk 8.6.9 (algunos Python de python.org) ignora el color de fila de los tags
+    # en el tema vista: sin esto, la tabla sale toda blanca y se pierde el semáforo.
+    for opcion in ("foreground", "background"):
+        style.map("Treeview", **{opcion: [e for e in style.map("Treeview", query_opt=opcion)
+                                         if e[:2] != ("!disabled", "!selected")]})
 
     estado = {"sel": None, "after": None}
 
@@ -933,8 +938,8 @@ def run_gui(smoke_ms: int = 0, data_path: Path | None = None, config_path: Path 
         tree.column(c, width=ancho, stretch=estira, anchor="w")
     sb = ttk.Scrollbar(mid, orient="vertical", command=tree.yview)
     tree.configure(yscrollcommand=sb.set)
+    sb.pack(side="right", fill="y")  # primero la barra: si falta ancho, se achica la tabla y no la barra
     tree.pack(side="left", fill="both", expand=True)
-    sb.pack(side="right", fill="y")
     for tag, (bg, fg) in COLORES.items():
         tree.tag_configure(tag, background=bg, foreground=fg)
 
