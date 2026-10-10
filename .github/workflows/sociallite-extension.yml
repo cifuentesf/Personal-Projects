@@ -1,0 +1,51 @@
+name: sociallite-extension
+
+# Pruebas, revisión con web-ext y prueba en un Chromium real (con instagram.com
+# simulado), y los paquetes de la extensión listos para cargar.
+
+on:
+  push:
+    paths:
+      - "sociallite/**"
+      - ".github/workflows/sociallite-extension.yml"
+  pull_request:
+    paths:
+      - "sociallite/**"
+      - ".github/workflows/sociallite-extension.yml"
+  workflow_dispatch:
+
+jobs:
+  extension:
+    name: Pruebas y paquetes
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sociallite
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
+
+      - name: Armar la extensión
+        run: python3 scripts/build_extension.py
+
+      - name: Revisión de Mozilla (web-ext lint)
+        run: npx --yes web-ext@8.10.0 lint --source-dir dist/extension --warnings-as-errors
+
+      - name: Prueba en Chromium real
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+          node tests/e2e/chromium.cjs dist/extension
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sociallite-chromium
+          path: sociallite/dist/extension
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sociallite-firefox
+          path: sociallite/dist/sociallite-firefox.xpi

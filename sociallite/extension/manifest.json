@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "SocialLite",
+  "version": "1.0.0",
+  "description": "Instagram sin doomscrolling: los mensajes siempre libres, el resto con límite diario.",
+  "permissions": [
+    "storage"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://www.instagram.com/*"
+      ],
+      "js": [
+        "shared/filter.js",
+        "extension/habits.js",
+        "extension/content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_title": "SocialLite",
+    "default_popup": "extension/popup.html",
+    "default_icon": {
+      "16": "extension/icons/icon-16.png",
+      "32": "extension/icons/icon-32.png",
+      "48": "extension/icons/icon-48.png"
+    }
+  },
+  "icons": {
+    "16": "extension/icons/icon-16.png",
+    "32": "extension/icons/icon-32.png",
+    "48": "extension/icons/icon-48.png",
+    "128": "extension/icons/icon-128.png"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "sociallite@cifuentes.cl",
+      "strict_min_version": "115.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    }
+  }
+}

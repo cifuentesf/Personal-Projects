@@ -1,0 +1,124 @@
+name: sociallite-ios
+
+# Compila SocialLite para iPhone sin Mac: pruebas del filtro, autoprueba en el simulador
+# y un .ipa sin firmar (la firma la pone Sideloadly en Windows con tu Apple ID).
+# Si el artefacto ya expiró: Actions → sociallite-ios → Run workflow.
+
+on:
+  push:
+    paths:
+      - "sociallite/**"
+      - ".github/workflows/sociallite-ios.yml"
+  pull_request:
+    paths:
+      - "sociallite/**"
+      - ".github/workflows/sociallite-ios.yml"
+  workflow_dispatch:
+
+jobs:
+  test-filter:
+    name: Pruebas del filtro
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sociallite
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
+      - name: FilterScript.swift igual a shared/filter.js
+        run: |
+          python3 scripts/embed_filter.py
+          git diff --exit-code ios/SocialLite/Sources/FilterScript.swift
+
+  build-ios:
+    name: Simulador, autoprueba e .ipa
+    needs: test-filter
+    runs-on: macos-15
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: sociallite/ios
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Versiones
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Generar el proyecto (XcodeGen)
+        run: |
+          python3 ../scripts/embed_filter.py
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Elegir un simulador de iPhone
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          d = json.load(sys.stdin)["devices"]
+          c = [(k, x) for k, v in d.items() if "iOS" in k for x in v if x["name"].startswith("iPhone")]
+          print(sorted(c, key=lambda kx: kx[0])[-1][1]["udid"])')
+          xcrun simctl list devices available | grep "$UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Compilar para el simulador
+        run: |
+          xcodebuild -project SocialLite.xcodeproj -scheme SocialLite -configuration Debug \
+            -destination "id=${{ steps.sim.outputs.udid }}" -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO build > build.log 2>&1 || {
+              grep -E "error:|\*\* BUILD" build.log | sort -u | head -60; tail -40 build.log; exit 1; }
+          grep -E "warning:.*SocialLite/Sources|\*\* BUILD" build.log | sort -u | head -40 || true
+
+      # WebKit real con una página falsa de Instagram: no se conecta a Instagram.
+      - name: Autoprueba del filtro en WebKit (simulador)
+        timeout-minutes: 10
+        run: |
+          UDID=${{ steps.sim.outputs.udid }}
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/SocialLite.app
+          xcrun simctl launch --console-pty "$UDID" cl.cifuentes.sociallite --autoprueba | tee autoprueba.log
+          grep -q "AUTOPRUEBA OK" autoprueba.log
+
+      # Arranque normal: abre instagram.com sin sesión (la pantalla de ingreso) con la
+      # pregunta «¿A qué vienes?» encima. Solo para ver que la app arranca y no se cae.
+      - name: Arranque normal y captura
+        run: |
+          UDID=${{ steps.sim.outputs.udid }}
+          mkdir -p capturas
+          xcrun simctl status_bar "$UDID" override --time "9:41" || true
+          xcrun simctl launch "$UDID" cl.cifuentes.sociallite
+          sleep 20
+          xcrun simctl io "$UDID" screenshot capturas/arranque.png
+          xcrun simctl spawn "$UDID" launchctl list | grep -q cl.cifuentes.sociallite
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: SocialLite-capturas
+          path: sociallite/ios/capturas
+          if-no-files-found: ignore
+
+      - name: Compilar para iPhone, sin firmar (.ipa)
+        run: |
+          xcodebuild -project SocialLite.xcodeproj -target SocialLite -configuration Release -sdk iphoneos \
+            SYMROOT="$PWD/build-ios" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build > build-ios.log 2>&1 || {
+              grep -E "error:|\*\* BUILD" build-ios.log | sort -u | head -60; tail -40 build-ios.log; exit 1; }
+          rm -rf Payload SocialLite.ipa
+          mkdir -p Payload
+          cp -R build-ios/Release-iphoneos/SocialLite.app Payload/
+          zip -qry SocialLite.ipa Payload
+          ls -la SocialLite.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SocialLite-ipa
+          path: sociallite/ios/SocialLite.ipa
+          retention-days: 30
