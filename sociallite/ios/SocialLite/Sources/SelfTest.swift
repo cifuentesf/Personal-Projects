@@ -44,7 +44,7 @@ final class SelfTest: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         Task { await run() }
         // Vigía: si algo se cuelga, la CI no espera para siempre.
         Task {
-            await pause(60)
+            await pause(180)
             finish(extra: "se acabó el tiempo")
         }
         return web
@@ -53,9 +53,15 @@ final class SelfTest: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
     // MARK: pruebas
 
     private func run() async {
-        await pause(1.5)
         let pagina = WKContentWorld.page
         let filtro = InstagramWebView.world
+
+        // El primer arranque del simulador es lento: se espera a que el filtro avise la ruta
+        // (eso ya prueba la inyección y el puente) y a que pase un escaneo (250 ms).
+        let cargo = await waitFor(seconds: 90) { self.messages.contains("route:home") }
+        expect(cargo ? "sí" : messages.joined(separator: ","), "sí", "el puente nativo recibe la ruta")
+        guard cargo else { return finish(extra: "la página de prueba no cargó") }
+        await pause(1.0)
 
         expect(await js("document.documentElement.getAttribute('data-sl-route')", pagina), "home", "ruta del inicio")
         expect(await js("document.getElementById('ad').getAttribute('data-sl-hidden')", pagina), "ad", "oculta publicidad")
@@ -69,12 +75,10 @@ final class SelfTest: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
                "escala de grises en el inicio")
         expect(await js("typeof window.SocialLiteFilter", pagina), "undefined", "la página no ve el filtro")
         expect(await js("typeof window.SocialLiteFilter", filtro), "object", "el filtro está en su mundo")
-        expect(messages.contains("route:home") ? "sí" : messages.joined(separator: ","), "sí",
-               "el puente nativo recibe la ruta")
 
         // La página navega sola al feed de reels (como hace la SPA de Instagram).
         _ = await js("history.pushState({}, '', '/reels/')", pagina)
-        await pause(1.5)
+        _ = await waitFor(seconds: 10) { !self.navigations.isEmpty }
         expect(messages.contains("blocked:reels-feed") ? "sí" : messages.joined(separator: ","), "sí",
                "avisa el bloqueo del feed de reels")
         expect(navigations.first ?? "ninguna", "/", "sale del feed de reels hacia el inicio")
@@ -82,7 +86,7 @@ final class SelfTest: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         // Se acabó el tiempo del día: el filtro manda a Mensajes en vivo.
         navigations.removeAll()
         _ = await js("window.SocialLiteFilter.update({lockToDMs: true})", filtro)
-        await pause(1.0)
+        _ = await waitFor(seconds: 10) { !self.navigations.isEmpty }
         expect(navigations.first ?? "ninguna", UsageStats.inboxPath, "bloqueo en vivo manda a Mensajes")
 
         finish(extra: nil)
@@ -90,6 +94,16 @@ final class SelfTest: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
 
     private func expect(_ actual: String, _ expected: String, _ name: String) {
         if actual != expected { failures.append("\(name): se esperaba «\(expected)», llegó «\(actual)»") }
+    }
+
+    /// Espera hasta que se cumpla la condición o se acabe el plazo; devuelve si se cumplió.
+    private func waitFor(seconds: Double, _ condition: () -> Bool) async -> Bool {
+        let limite = Date().addingTimeInterval(seconds)
+        while !condition() {
+            if Date() > limite { return false }
+            await pause(0.25)
+        }
+        return true
     }
 
     private func pause(_ seconds: Double) async {
