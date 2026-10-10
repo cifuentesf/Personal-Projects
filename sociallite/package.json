@@ -1,0 +1,16 @@
+{
+  "name": "sociallite",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Instagram sin doomscrolling: filtro local para iPhone y para el navegador.",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test tests/"
+  },
+  "devDependencies": {
+    "jsdom": "^26.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
