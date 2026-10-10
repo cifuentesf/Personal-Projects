@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es-CL">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SocialLite</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <h1>SocialLite</h1>
+    <p id="estado" class="estado" aria-live="polite"></p>
+  </header>
+
+  <section aria-labelledby="t-hoy">
+    <h2 id="t-hoy">Hoy</h2>
+    <dl class="hoy">
+      <div><dt>Mensajes</dt><dd id="s-dm">0 min</dd></div>
+      <div><dt>Inicio y resto</dt><dd id="s-feed">0 min</dd></div>
+      <div><dt>Intentos bloqueados</dt><dd id="s-blocks">0</dd></div>
+    </dl>
+  </section>
+
+  <section aria-labelledby="t-fuera">
+    <h2 id="t-fuera">Fuera de mensajes</h2>
+    <label class="fila">
+      <span>Tiempo diario (min, 0 = sin límite)</span>
+      <input type="number" id="budget" min="0" max="120" step="5" inputmode="numeric">
+    </label>
+    <p class="nota" id="budget-nota"></p>
+    <label class="fila">
+      <span>Aviso de pausa cada (min, 0 = nunca)</span>
+      <input type="number" id="nudgeMinutes" min="0" max="30" step="1" inputmode="numeric">
+    </label>
+    <label class="fila check">
+      <input type="checkbox" id="askIntent">
+      <span>Preguntar a qué vienes al abrir</span>
+    </label>
+    <p class="nota">Bajar el tiempo aplica de inmediato. Subirlo o quitar el límite rige desde mañana: así no se puede hacer trampa en caliente.</p>
+  </section>
+
+  <section aria-labelledby="t-filtros">
+    <h2 id="t-filtros">Filtros</h2>
+    <label class="fila check"><input type="checkbox" data-config="blockReels"><span>Bloquear Reels</span></label>
+    <label class="fila check"><input type="checkbox" data-config="hideFeedReels"><span>Ocultar reels del inicio</span></label>
+    <label class="fila check"><input type="checkbox" data-config="blockExplore"><span>Ocultar la cuadrícula de Explorar</span></label>
+    <label class="fila check"><input type="checkbox" data-config="hideAds"><span>Ocultar publicidad</span></label>
+    <label class="fila check"><input type="checkbox" data-config="hideSuggested"><span>Ocultar sugerencias</span></label>
+    <label class="fila check"><input type="checkbox" data-config="grayscale"><span>Escala de grises fuera de mensajes</span></label>
+    <label class="fila">
+      <span>Publicaciones del inicio por día (0 = sin límite)</span>
+      <input type="number" data-config="feedLimit" min="0" max="60" step="5" inputmode="numeric">
+    </label>
+  </section>
+
+  <section aria-labelledby="t-modo">
+    <h2 id="t-modo">Modo solo mensajes</h2>
+    <label class="fila check"><input type="checkbox" data-config="dmOnlyMode"><span>Usar Instagram solo para mensajes</span></label>
+  </section>
+
+  <footer>Todo se guarda solo en este navegador: sin servidor, sin cuentas propias y sin analítica.</footer>
+
+  <script src="habits.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

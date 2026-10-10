@@ -1,0 +1,45 @@
+# Proyecto de Xcode descrito en texto: `xcodegen generate` crea SocialLite.xcodeproj
+# (que no se versiona). Antes hay que correr `python3 scripts/embed_filter.py`.
+name: SocialLite
+options:
+  bundleIdPrefix: cl.cifuentes
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+targets:
+  SocialLite:
+    type: application
+    platform: iOS
+    sources:
+      - path: SocialLite/Sources
+      - path: SocialLite/Assets.xcassets
+    info:
+      path: SocialLite/Info.plist
+      properties:
+        CFBundleDisplayName: SocialLite
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIRequiresFullScreen: true
+        ITSAppUsesNonExemptEncryption: false
+        CFBundleURLTypes:
+          - CFBundleURLName: cl.cifuentes.sociallite
+            CFBundleURLSchemes:
+              - sociallite
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: cl.cifuentes.sociallite
+        PRODUCT_NAME: SocialLite
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Sin firma: la firma la pone Sideloadly con tu Apple ID al instalar.
+        CODE_SIGNING_ALLOWED: "NO"
+        CODE_SIGNING_REQUIRED: "NO"
+        CODE_SIGN_IDENTITY: ""
+    scheme: {}

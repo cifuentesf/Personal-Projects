@@ -1,0 +1,12 @@
+node_modules/
+dist/
+# Generados en la CI
+ios/SocialLite.xcodeproj/
+ios/SocialLite/Info.plist
+ios/build/
+ios/build.log
+ios/Payload/
+*.ipa
+ios/build-ios/
+ios/*.log
+ios/capturas/
