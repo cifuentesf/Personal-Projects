@@ -99,6 +99,18 @@ struct InstagramWebView: UIViewRepresentable {
         return allowedHosts.contains { h == $0 || h.hasSuffix("." + $0) }
     }
 
+    /// Micrófono y cámara: solo instagram.com, solo en el frame principal y solo dentro de
+    /// Mensajes (para grabar audios). El micrófono se concede sin el aviso extra de WebKit
+    /// (iOS igual pide permiso la primera vez); la cámara siempre pregunta; fuera de
+    /// Mensajes, nada.
+    static func mediaDecision(host: String, path: String?, mainFrame: Bool,
+                              type: WKMediaCaptureType) -> WKPermissionDecision {
+        let h = host.lowercased()
+        guard mainFrame, h == "instagram.com" || h.hasSuffix(".instagram.com"),
+              let p = path, p == "/direct" || p.hasPrefix("/direct/") else { return .deny }
+        return type == .microphone ? .grant : .prompt
+    }
+
     @MainActor
     final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
         var parent: InstagramWebView
@@ -151,6 +163,15 @@ struct InstagramWebView: UIViewRepresentable {
             // instagram://, mailto:, tel:… se abren afuera.
             UIApplication.shared.open(url)
             decisionHandler(.cancel)
+        }
+
+        // MARK: micrófono y cámara
+
+        func webView(_ webView: WKWebView, requestMediaCapturePermissionFor origin: WKSecurityOrigin,
+                     initiatedByFrame frame: WKFrameInfo, type: WKMediaCaptureType,
+                     decisionHandler: @escaping (WKPermissionDecision) -> Void) {
+            decisionHandler(InstagramWebView.mediaDecision(host: origin.host, path: webView.url?.path,
+                                                           mainFrame: frame.isMainFrame, type: type))
         }
 
         // target=_blank: si es de Instagram se carga en el mismo WebView; si no, afuera.

@@ -56,6 +56,27 @@ final class SelfTest: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         let pagina = WKContentWorld.page
         let filtro = InstagramWebView.world
 
+        // Audios en mensajes: sin la clave del Info.plist iOS no presta el micrófono.
+        let micro = Bundle.main.object(forInfoDictionaryKey: "NSMicrophoneUsageDescription") as? String
+        expect(micro?.isEmpty == false ? "sí" : "no", "sí", "Info.plist declara el micrófono")
+        let camara = Bundle.main.object(forInfoDictionaryKey: "NSCameraUsageDescription") as? String
+        expect(camara?.isEmpty == false ? "sí" : "no", "sí", "Info.plist declara la cámara")
+        func permiso(_ host: String, _ path: String?, _ principal: Bool, _ tipo: WKMediaCaptureType) -> String {
+            switch InstagramWebView.mediaDecision(host: host, path: path, mainFrame: principal, type: tipo) {
+            case .grant: return "grant"
+            case .prompt: return "prompt"
+            default: return "deny"
+            }
+        }
+        expect(permiso("www.instagram.com", "/direct/t/123", true, .microphone), "grant", "micrófono en un chat")
+        expect(permiso("www.instagram.com", "/direct", true, .microphone), "grant", "micrófono en /direct")
+        expect(permiso("www.instagram.com", "/direct/t/123", true, .camera), "prompt", "la cámara pregunta")
+        expect(permiso("www.instagram.com", "/", true, .microphone), "deny", "sin micrófono en el inicio")
+        expect(permiso("www.instagram.com", "/directo", true, .microphone), "deny", "ruta parecida no cuenta")
+        expect(permiso("www.instagram.com", "/direct/t/123", false, .microphone), "deny", "sin micrófono en iframes")
+        expect(permiso("evil-instagram.com", "/direct/t/1", true, .microphone), "deny", "otro dominio")
+        expect(permiso("www.instagram.com", nil, true, .microphone), "deny", "sin URL")
+
         // El primer arranque del simulador es lento: se espera a que el filtro avise la ruta
         // (eso ya prueba la inyección y el puente) y a que pase un escaneo (250 ms).
         let cargo = await waitFor(seconds: 90) { self.messages.contains("route:home") }
