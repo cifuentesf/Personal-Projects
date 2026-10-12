@@ -165,6 +165,7 @@ Los datos de la extensión (preferencias y contadores del día) se borran al qui
   Desde la carpeta del repositorio, ese comando no debería mostrar nada.
 - Nunca lee ni guarda contraseñas, cookies, mensajes ni nombres de contactos. Las estadísticas son solo números y fechas.
 - No hace nada por ti en Instagram (ni "me gusta", ni seguir, ni enviar): solo **oculta** y **redirige**.
+- **Micrófono y cámara** (iPhone): solo dentro de Mensajes, para grabar audios o adjuntar una foto. La primera vez iOS te pide permiso; fuera de Mensajes la app los niega siempre. Puedes quitarlos en *Ajustes → SocialLite*.
 - Lo guardado es solo: preferencias, contadores del día y los IDs de las publicaciones vistas hoy (para el tope del inicio).
 - En el iPhone, *Ajustes de SocialLite → Datos → **Cerrar sesión y borrar datos*** borra la sesión de Instagram y las publicaciones vistas. El tiempo usado hoy se mantiene hasta medianoche, para que borrar no sirva para saltarse el límite. Desinstalar la app borra todo.
 
@@ -231,4 +232,5 @@ sociallite/
 | Se cuela publicidad, una sugerencia o un reel | Instagram cambió un texto: sección 8. |
 | Subí el límite y sigo bloqueado | Es a propósito: subirlo rige desde mañana. Bajarlo aplica de inmediato. |
 | Instagram se ve como computador o dice "navegador no compatible" | Recarga desde *Ajustes → Datos → Recargar Instagram*. Si sigue, avisa: puede que haya que ajustar `applicationNameForUserAgent` en `InstagramWebView.swift`. |
+| No puedo grabar audios en un chat | Necesitas la versión 1.0 (2) o posterior: reinstala la `.ipa` más reciente. La primera vez que grabes, acepta el permiso del micrófono. Si lo negaste: *Ajustes → SocialLite → Micrófono*. |
 | La extensión no hace nada en Firefox | Activa el permiso de *www.instagram.com* (sección 6). |

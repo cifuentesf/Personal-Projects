@@ -50,19 +50,20 @@ Aquí quedan las decisiones que la especificación dejaba abiertas y los puntos 
 20. **Ícono incluido**, aunque la especificación no lo exigía: sin ícono, la app aparece en blanco en la pantalla de inicio. `scripts/make_icons.py` lo genera (un globo de diálogo sobre un degradado), y lo mismo hace con los íconos de la extensión. No hay imágenes de terceros.
 21. **Gesto de volver atrás activo** (`allowsBackForwardNavigationGestures`). Las reglas del filtro se aplican igual en cada ruta a la que se vuelve.
 22. **Los interruptores de los filtros aplican de inmediato**, como pide la especificación; la regla anti-trampa solo cubre el presupuesto diario. El bloqueo por presupuesto (`lockToDMs`) no depende de ningún interruptor: apagar "Bloquear Reels" no desbloquea un día agotado.
+23. **Micrófono y cámara solo dentro de Mensajes.** Para grabar audios, el Info.plist declara `NSMicrophoneUsageDescription` y `NSCameraUsageDescription`; sin ellas iOS no le presta el micrófono al WebView, y elegir «Tomar foto» al adjuntar cerraría la app. El `WKUIDelegate` decide cada pedido: micrófono concedido solo para instagram.com, en el frame principal y en `/direct…` (iOS igual pide permiso la primera vez); cámara, siempre con pregunta; en cualquier otra ruta o dominio, denegado. Es lo mínimo para que los audios funcionen sin abrir el micrófono al resto de Instagram.
 
 ## Extensión
 
-23. **Sin botón "Cerrar sesión y borrar datos".** Borrar las cookies de Instagram exige permisos (`cookies` o `browsingData`) que la regla de "solo `storage`" no permite. El README explica cómo hacerlo desde el navegador ("Borrar datos del sitio") y que quitar la extensión borra sus datos.
-24. **Contabilidad con varias pestañas:**
+24. **Sin botón "Cerrar sesión y borrar datos".** Borrar las cookies de Instagram exige permisos (`cookies` o `browsingData`) que la regla de "solo `storage`" no permite. El README explica cómo hacerlo desde el navegador ("Borrar datos del sitio") y que quitar la extensión borra sus datos.
+25. **Contabilidad con varias pestañas:**
     - Cada pestaña escribe un "latido" (`id` + hora) cada 3 s, solo mientras está visible y con foco.
     - Una pestaña no cuenta tiempo si otra latió hace menos de 7 s. Así nunca se cuenta doble.
     - Cada tick suma como máximo 5 s, para que una pestaña suspendida no sume de golpe el tiempo que estuvo dormida.
     - Se guarda cada 15 s y en `pagehide`.
-25. **"¿A qué vienes?" en la extensión** aparece al abrir instagram.com cuando pasaron más de 5 min desde la última visita. Usa `lastVisit` en `storage.local` (solo una fecha).
-26. **`data_collection_permissions: { required: ["none"] }`** en `browser_specific_settings.gecko`. Firefox ahora pide declarar qué datos recoge una extensión. Esta no recoge ninguno, y con esa línea `web-ext lint` queda sin avisos.
-27. **`strict_min_version: "115.0"`.** Firefox soporta MV3 desde la versión 109, y la 115 es la ESR (versión de soporte extendido) más antigua posterior a eso.
-28. **`content.js` y `habits.js` usan sintaxis moderna** (`??`, `const`, funciones flecha), que tienen todos los navegadores soportados. Solo `shared/filter.js` se limita a ES2019, porque también corre en el WebKit de iOS 16; una prueba lo comprueba.
+26. **"¿A qué vienes?" en la extensión** aparece al abrir instagram.com cuando pasaron más de 5 min desde la última visita. Usa `lastVisit` en `storage.local` (solo una fecha).
+27. **`data_collection_permissions: { required: ["none"] }`** en `browser_specific_settings.gecko`. Firefox ahora pide declarar qué datos recoge una extensión. Esta no recoge ninguno, y con esa línea `web-ext lint` queda sin avisos.
+28. **`strict_min_version: "115.0"`.** Firefox soporta MV3 desde la versión 109, y la 115 es la ESR (versión de soporte extendido) más antigua posterior a eso.
+29. **`content.js` y `habits.js` usan sintaxis moderna** (`??`, `const`, funciones flecha), que tienen todos los navegadores soportados. Solo `shared/filter.js` se limita a ES2019, porque también corre en el WebKit de iOS 16; una prueba lo comprueba.
 
 ## Riesgos conocidos
 
